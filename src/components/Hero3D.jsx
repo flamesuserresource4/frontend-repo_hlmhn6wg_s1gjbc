@@ -5,7 +5,15 @@ import { motion, useMotionValue, useTransform } from 'framer-motion'
 export default function Hero3D() {
   const [splineOk, setSplineOk] = useState(true)
   const [loaded, setLoaded] = useState(false)
+  const [disable3d, setDisable3d] = useState(false)
   const sceneUrl = 'https://prod.spline.design/vqv1o2R0b50pLVjQ/scene.splinecode'
+
+  useEffect(() => {
+    try {
+      const val = localStorage.getItem('disable3d')
+      setDisable3d(val === '1')
+    } catch {}
+  }, [])
 
   // Subtle parallax for the headline block
   const mx = useMotionValue(0)
@@ -29,20 +37,26 @@ export default function Hero3D() {
     return () => el.removeEventListener('mousemove', onMove)
   }, [mx, my])
 
+  const Background = () => (
+    <div className="absolute inset-0 -z-10">
+      {splineOk && !disable3d ? (
+        <Spline
+          scene={sceneUrl}
+          onLoad={() => setLoaded(true)}
+          onError={(e) => {
+            console.error('Spline error', e)
+            setSplineOk(false)
+          }}
+        />
+      ) : (
+        <div className="w-full h-full bg-[url('https://images.unsplash.com/photo-1500530855697-b586d89ba3ee?q=80&w=2000&auto=format&fit=crop')] bg-cover bg-center" />
+      )}
+    </div>
+  )
+
   return (
     <section id="home" className="relative min-h-[95vh] flex items-center overflow-hidden">
-      {/* 3D background */}
-      <div className="absolute inset-0 -z-10">
-        {splineOk ? (
-          <Spline
-            scene={sceneUrl}
-            onLoad={() => setLoaded(true)}
-            onError={() => setSplineOk(false)}
-          />
-        ) : (
-          <div className="w-full h-full bg-[url('https://images.unsplash.com/photo-1500530855697-b586d89ba3ee?q=80&w=2000&auto=format&fit=crop')] bg-cover bg-center" />
-        )}
-      </div>
+      <Background />
 
       {/* Ambient overlays */}
       <div className="absolute inset-0 pointer-events-none">
@@ -110,6 +124,25 @@ export default function Hero3D() {
             <span className="text-sm">Survolez pour animer la scène</span>
           </motion.div>
         </motion.div>
+
+        {/* Controls */}
+        <div className="absolute left-6 bottom-6 flex items-center gap-3">
+          {(splineOk && !disable3d) ? (
+            <button
+              onClick={() => { try { localStorage.setItem('disable3d', '1') } catch {}; setDisable3d(true) }}
+              className="px-4 py-2 rounded-full bg-white/10 hover:bg-white/15 border border-white/20 text-white/90 text-sm"
+            >
+              Désactiver la 3D
+            </button>
+          ) : (
+            <button
+              onClick={() => { try { localStorage.removeItem('disable3d') } catch {}; setSplineOk(true); setDisable3d(false) }}
+              className="px-4 py-2 rounded-full bg-amber-500 text-slate-900 font-semibold text-sm"
+            >
+              Réactiver la 3D
+            </button>
+          )}
+        </div>
       </div>
     </section>
   )
